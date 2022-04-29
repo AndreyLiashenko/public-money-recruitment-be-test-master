@@ -1,4 +1,4 @@
-﻿namespace VacationRental.Api.Models
+﻿namespace VacationRental.Entities.DTO
 {
     public class ResourceIdViewModel
     {
