@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc;
-using VacationRental.Api.Models;
+﻿using Microsoft.AspNetCore.Mvc;
+using VacationRental.BLL.Contracts;
+using VacationRental.Entities.DTO;
+using VacationRental.Entities.DTO.Rental;
 
 namespace VacationRental.Api.Controllers
 {
@@ -9,35 +9,30 @@ namespace VacationRental.Api.Controllers
     [ApiController]
     public class RentalsController : ControllerBase
     {
-        private readonly IDictionary<int, RentalViewModel> _rentals;
+        private readonly IRentalService _rentalService;
 
-        public RentalsController(IDictionary<int, RentalViewModel> rentals)
+        public RentalsController(IRentalService rentalService)
         {
-            _rentals = rentals;
+            _rentalService = rentalService;
         }
 
         [HttpGet]
         [Route("{rentalId:int}")]
-        public RentalViewModel Get(int rentalId)
+        public async Task<ActionResult<RentalViewModel>> Get(int rentalId)
         {
-            if (!_rentals.ContainsKey(rentalId))
-                throw new ApplicationException("Rental not found");
-
-            return _rentals[rentalId];
+            var result = await _rentalService.GetRentalAsync(rentalId);
+            if (result == null) return NotFound("Rental not found");
+            return result;
         }
 
         [HttpPost]
-        public ResourceIdViewModel Post(RentalBindingModel model)
+        public async Task<ActionResult<ResourceIdViewModel>> Post([FromBody] RentalBindingModel model)
         {
-            var key = new ResourceIdViewModel { Id = _rentals.Keys.Count + 1 };
+            if (model.Units <= 0) return BadRequest("Unit must be positive");
 
-            _rentals.Add(key.Id, new RentalViewModel
-            {
-                Id = key.Id,
-                Units = model.Units
-            });
+            if (model.PreparationTimeInDays != null && model.PreparationTimeInDays < 0) return BadRequest("PreparationTimeInDays must be positive");
 
-            return key;
+            return await _rentalService.AddRentalAsync(model);
         }
     }
 }
